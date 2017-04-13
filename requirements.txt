@@ -1,0 +1,8 @@
+appdirs==1.4.3
+argon2==0.1.10
+gattlib==0.20150805
+packaging==16.8
+PyBluez==0.22
+pyparsing==2.2.0
+requests==2.13.0
+six==1.10.0
