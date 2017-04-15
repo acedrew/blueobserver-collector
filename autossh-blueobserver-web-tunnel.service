@@ -1,0 +1,11 @@
+[Unit]
+Description=AutoSSH tunnel for blueobserver-server running on yourhost:5000
+After=network.target
+
+[Service]
+Environment="AUTOSSH_GATETIME=0"
+#remove the -R port:localhost:22 if you do not want to open a reverse tunnel to your collector from the server
+ExecStart=/usr/bin/autossh -M 0 -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" -NL 5000:localhost:5000 -R 10022:localhost:22 youruser@yourserver.com
+
+[Install]
+WantedBy=multi-user.target

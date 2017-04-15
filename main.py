@@ -5,71 +5,113 @@ import argon2
 import requests
 import base64
 import os
+import multiprocessing
 
-service = DiscoveryService()
-state = {"devices": {}}
 salt = os.environ['BLUE_COLLECTOR_HASH_SALT']
 location = os.environ['BLUE_COLLECTOR_LOCATION_NAME']
+if 'BLUE_COLLECTOR_GEO_POINT' in os.environ:
+    geo_point = [ float(a) for a in os.environ[
+        'BLUE_COLLECTOR_GEO_POINT'].split(',') ]
 
 
-def publish_new_device(address, timestamp, location):
-    observation = {}
-    observation['hash'] = str(base64.urlsafe_b64encode(argon2.argon2_hash(address, salt)))
-    observation['location'] = location
-    observation['timestamp'] = timestamp
-    try:
-        r = requests.post("http://localhost:5000/observations", json=observation)
-        print(r)
-    except:
-        print('connection failed')
-        pass
+class DeviceScanner(multiprocessing.Process):
+
+    def __init__(self, observation_queue):
+        multiprocessing.Process.__init__(self)
+        self.observation_queue = observation_queue
+        self.timeout = 5
+
+    def run(self):
+        while True:
+            devices = self.scan()
+            self.process_devices(devices)
+
+    def set_timeout(self, timeout):
+        self.timeout = timeout
 
 
-def scan_ble(timeout=5):
-    return service.discover(timeout)
+    def process_devices(self, devices):
+        now = time.time()
+        for device in devices:
+            self.observation_queue.put((device, now))
+
+class BTScanner(DeviceScanner):
+
+    def __init__(self, observation_queue):
+        DeviceScanner.__init__(self, observation_queue)
+
+    def scan(self):
+        return {i[0]: i[1] for i in bluetooth.discover_devices(
+            duration=self.timeout, lookup_names=True, flush_cache=True,
+            lookup_class=False)}
 
 
-def scan_bluez(timeout=5):
-    return bluetooth.discover_devices(
-        duration=timeout, lookup_names=True, flush_cache=True,
-        lookup_class=False)
+class BLEScanner(DeviceScanner):
 
+    def __init__(self, observation_queue):
+        DeviceScanner.__init__(self, observation_queue)
+        self.service = DiscoveryService()
 
-def get_all_devices():
-    devices = scan_ble(5)
-    devices.update({i[0]: i[1] for i in scan_bluez(5)})
-    return devices
+    def scan(self):
+        return self.service.discover(self.timeout)
 
+class DevicePublisher(multiprocessing.Process):
 
-def process_devices(devices, timestamp):
-    state['new_devices'] = {}
-    state['removed_devices'] = {}
-    for (address, name) in devices.items():
-        if address not in state['devices']:
-            state['new_devices'][address] = {"name": name, "ts": timestamp}
-        state['devices'][address] = {"name": name, "ts": timestamp}
+    def __init__(self, observation_queue):
+        multiprocessing.Process.__init__(self)
+        self.observations = observation_queue
+        self.seen_devices = {}
+        self.cleanup_counter = 0
+
+    def run(self):
+        while True:
+            observation = self.observations.get()
+            self.process_observation(observation)
+            print(observation)
+
+    def process_observation(self, observation):
+        (mac, obs_time) = observation
+        if mac in self.seen_devices:
+            if self.seen_devices[mac] + 300 < obs_time:
+                self.publish_observation(mac, obs_time)
+            else:
+                self.seen_devices[mac] = obs_time
+        else:
+            self.seen_devices[mac] = obs_time
+            self.publish_observation(mac, obs_time)
+
+    def cleanup_devices(self):
+        now = time.time()
+        remove_devices = []
+        for mac, seen_time in self.seen_devices.items():
+            if now - 600 > seen_time:
+                remove_devices.append(mac)
+        for mac in remove_devices:
+            del self.seen_devices[mac]
+
+    def publish_observation(self, mac, obs_time):
+        observation = {}
+        observation['hash'] = base64.urlsafe_b64encode(
+            argon2.argon2_hash(mac, salt)).decode()
+        observation['location'] = location
+        observation['geo_point'] = geo_point
+        observation['timestamp'] = obs_time
+        try:
+            r = requests.post("http://localhost:5000/observations", json=observation)
+        except Exception as e:
+            print('publish failed for observation: ' + observation['hash'] + 'with exception: ' + str(e))
+            pass
 
 
 def main():
-    while 1:
-        devices = get_all_devices()
-        timestamp = time.time()
-        process_devices(devices, timestamp)
-
-        for (address, data) in state['new_devices'].items():
-            print("New Device: name: {}, address: {}".format(
-                data['name'], address))
-            publish_new_device(address, timestamp, location)
-        for (address, data) in state['devices'].items():
-            if data['ts'] < timestamp - 60:
-                state['removed_devices'][address] = data
-        for address in state['removed_devices']:
-            del state['devices'][address]
-
-        for (address, name) in state['removed_devices'].items():
-            print("Device Removed: name: {}, address: {}".format(
-                name, address))
-
+    print(geo_point)
+    observations = multiprocessing.Queue()
+    ble_scanner = BLEScanner(observations)
+    bt_scanner = BTScanner(observations)
+    publisher = DevicePublisher(observations)
+    ble_scanner.start()
+    bt_scanner.start()
+    publisher.start()
 
 if __name__ == "__main__":
     main()
