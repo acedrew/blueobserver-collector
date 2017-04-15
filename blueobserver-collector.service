@@ -1,6 +1,6 @@
 [Unit]
 Description=Blue Observer Collector Service
-After=dbus-org.bluez.service network.target autossh-traffic-web-tunnel.service
+After=dbus-org.bluez.service network.target autossh-blueobserver-web-tunnel.service
 
 [Service]
 Type=simple
