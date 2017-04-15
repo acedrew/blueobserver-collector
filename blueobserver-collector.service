@@ -10,7 +10,7 @@ Environment=BLUE_COLLECTOR_HASH_SALT="put your hash salt here"
 Environment=BLUE_COLLECTOR_LOCATION_NAME="name of location"
 #Location GPS Coordinates, if not set, daemon will attempt to collect from USB-GPS, if present
 Environment=BLUE_COLLECTOR_GEO_POINT="(lat, lon)"
-Execstart=/opt/projects/blueobserver-collector/bin/python /opt/projects/blueobserver-collector/main.py
+ExecStart=/opt/projects/blueobserver-collector/bin/python /opt/projects/blueobserver-collector/main.py
 
 [Install]
 WantedBy=multi-user.target
