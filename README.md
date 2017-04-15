@@ -6,7 +6,7 @@ See github.com/acedrew/blueobserver for the server side implementation. This col
 This project seeks to protect to some degree the privacy of the devices being sniffed by only transmitting argon2 hashed versions of the MAC, and on the server side only storing observation data relative to arbitrarily assigned UUIDs that expire after a set period of time.
 
 # Requirements
-I will try to compile the exact process of setting this up on a RPi running jessie-lite in the future for now, see the system requirements in each of the packages in requirements.txt
+I will try to compile the exact process of setting this up on a RPi running jessie-lite in the future. For now, see the system requirements in each of the packages in requirements.txt
 
 Right now the collector expects to find an http server listening on localhost:5000, you can customize that to your specification. I've included a template autossh unit file for systemd if you want to tunnel a remote server to the collector.
 
