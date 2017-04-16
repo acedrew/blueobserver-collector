@@ -8,6 +8,18 @@ This project seeks to protect to some degree the privacy of the devices being sn
 # Requirements
 I will try to compile the exact process of setting this up on a RPi running jessie-lite in the future. For now, see the system requirements in each of the packages in requirements.txt
 
+The following packages need to be installed on a raspbian jessie-lite system:
+
+    -   python3
+    -   python3-virtualenv
+    -   virtualenv
+    -   libglib2.0-dev
+    -   libpython3-dev
+    -   libbluetooth-dev
+    -   libboost-dev
+    -   libboost-thread
+    -   libboost-python-dev
+
 Right now the collector expects to find an http server listening on localhost:5000, you can customize that to your specification. I've included a template autossh unit file for systemd if you want to tunnel a remote server to the collector.
 
 
