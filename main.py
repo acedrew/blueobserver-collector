@@ -120,7 +120,8 @@ class DevicePublisher(multiprocessing.Process):
                               json=observation)
         except Exception as e:
             print('publish failed for observation: ' + observation['hash'] +
-                  'with exception: ' + str(e) + " http code: " + str(r.status_code))
+                  'with exception: ' + str(e) + " http code: " +
+                  str(r.status_code))
             self.observations.put((mac, obs_time))
             pass
 
@@ -157,7 +158,8 @@ class LocationService(multiprocessing.Process):
                                                    })
         if r.status_code == 200:
             response = r.json()
-            location = (response.location.lat, response.location.lng)
+            location = (
+                response['location']['lat'], response['location']['lng'])
             self.locations.put(location)
 
 
