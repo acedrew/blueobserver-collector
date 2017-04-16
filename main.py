@@ -10,8 +10,8 @@ import multiprocessing
 salt = os.environ['BLUE_COLLECTOR_HASH_SALT']
 location = os.environ['BLUE_COLLECTOR_LOCATION_NAME']
 if 'BLUE_COLLECTOR_GEO_POINT' in os.environ:
-    geo_point = [ float(a) for a in os.environ[
-        'BLUE_COLLECTOR_GEO_POINT'].split(',') ]
+    geo_point = [float(a) for a in os.environ[
+        'BLUE_COLLECTOR_GEO_POINT'].split(',')]
 
 
 class DeviceScanner(multiprocessing.Process):
@@ -29,11 +29,11 @@ class DeviceScanner(multiprocessing.Process):
     def set_timeout(self, timeout):
         self.timeout = timeout
 
-
     def process_devices(self, devices):
         now = time.time()
         for device in devices:
             self.observation_queue.put((device, now))
+
 
 class BTScanner(DeviceScanner):
 
@@ -54,6 +54,7 @@ class BLEScanner(DeviceScanner):
 
     def scan(self):
         return self.service.discover(self.timeout)
+
 
 class DevicePublisher(multiprocessing.Process):
 
@@ -79,6 +80,9 @@ class DevicePublisher(multiprocessing.Process):
         else:
             self.seen_devices[mac] = obs_time
             self.publish_observation(mac, obs_time)
+        self.cleanup_counter += 1
+        if self.cleanup_counter > 100:
+            self.cleanup_devices()
 
     def cleanup_devices(self):
         now = time.time()
@@ -88,6 +92,7 @@ class DevicePublisher(multiprocessing.Process):
                 remove_devices.append(mac)
         for mac in remove_devices:
             del self.seen_devices[mac]
+        self.cleanup_counter = 0
 
     def publish_observation(self, mac, obs_time):
         observation = {}
@@ -97,9 +102,11 @@ class DevicePublisher(multiprocessing.Process):
         observation['geo_point'] = geo_point
         observation['timestamp'] = obs_time
         try:
-            r = requests.post("http://localhost:5000/observations", json=observation)
+            r = requests.post("http://localhost:5000/observations",
+                              json=observation)
         except Exception as e:
-            print('publish failed for observation: ' + observation['hash'] + 'with exception: ' + str(e))
+            print('publish failed for observation: ' + observation['hash'] +
+                  'with exception: ' + str(e) + " http code: " + r.code)
             pass
 
 
