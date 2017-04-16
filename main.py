@@ -62,9 +62,10 @@ class BLEScanner(DeviceScanner):
 
 class DevicePublisher(multiprocessing.Process):
 
-    def __init__(self, observation_queue):
+    def __init__(self, observation_queue, location_queue):
         multiprocessing.Process.__init__(self)
         self.observations = observation_queue
+        self.locations = location_queue
         self.seen_devices = {}
         self.cleanup_counter = 0
         self.geo_point = geo_point
