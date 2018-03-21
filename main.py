@@ -74,6 +74,7 @@ class DevicePublisher(multiprocessing.Process):
         (mac, obs_time) = observation
         if mac in self.seen_devices:
             if self.seen_devices[mac] + 300 < obs_time:
+                self.seen_devices[mac] = obs_time
                 self.publish_observation(mac, obs_time)
             else:
                 self.seen_devices[mac] = obs_time
