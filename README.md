@@ -1,6 +1,6 @@
 # blueobserver-collector
 Collector that runs on a raspberry pi to sniff bluetooth MAC Addresses
-See https://github.com/acedrew/blueobserver for the server side implementation. This collector will sniff Classic BT and BLE devices using the Raspberry Pi 3's built in BT stack
+<!--See https://github.com/acedrew/blueobserver for the server side implementation. --> This collector will sniff Classic BT and BLE devices using the Raspberry Pi 3's built in BT stack
 
 # Privacy
 This project seeks to protect to some degree the privacy of the devices being sniffed by only transmitting argon2 hashed versions of the MAC, and on the server side only storing observation data relative to arbitrarily assigned UUIDs that expire after a set period of time.
